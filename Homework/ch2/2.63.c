@@ -15,7 +15,7 @@ int sra(int x, int k)
 
 int main()
 {
-    int x = 0xeefffe99, k = 5;
+    int x = 0x0fffffff, k = 3;
     unsigned ux = x;
     printf("%x %x\n", srl(ux, k), ux >> k);
     printf("%x %x\n", sra(x, k), x >> k);
