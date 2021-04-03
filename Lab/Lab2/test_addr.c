@@ -6,6 +6,9 @@ int main()
 {
     float y = 131182200003105535;
     static char z[100] = "1190200523-石翔宇";
-    printf("x = %d\ny = %lf\nz = %s\n", x, y, z);
+    unsigned *yp = &y;
+    printf("x = %d\n", x);
+    printf("y = %lf = 0x%.8x\n", y, yp);
+    printf("z = %s\n", z);
     return 0;
 }
