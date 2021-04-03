@@ -1,8 +1,4 @@
 #include <stdio.h>
-int fib1[10000];
-long fib2[10000];
-unsigned fib3[10000];
-unsigned long fib4[10000];
 int fib_loop1(int n)
 {
     int a = 1, b = 1;
