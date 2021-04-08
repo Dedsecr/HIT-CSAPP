@@ -1,8 +1,5 @@
 #include <stdio.h>
-int fib1[10000];
-long fib2[10000];
-unsigned fib3[10000];
-unsigned long fib4[10000];
+
 int fib_dg1(int n)
 {
     
@@ -10,9 +7,7 @@ int fib_dg1(int n)
         return 1;
     else if(n == 0)
         return 0;
-    else if(fib1[n])
-        return fib1[n];
-    return fib1[n] = fib_dg1(n - 1) + fib_dg1(n - 2);
+    return fib_dg1(n - 1) + fib_dg1(n - 2);
 }
 long fib_dg2(int n)
 {
@@ -20,9 +15,7 @@ long fib_dg2(int n)
         return 1;
     else if(n == 0)
         return 0;
-    else if(fib2[n])
-        return fib2[n];
-    return fib2[n] = fib_dg2(n - 1) + fib_dg2(n - 2);
+    return fib_dg2(n - 1) + fib_dg2(n - 2);
 }
 unsigned fib_dg3(int n)
 {
@@ -30,9 +23,7 @@ unsigned fib_dg3(int n)
         return 1;
     else if(n == 0)
         return 0;
-    else if(fib3[n])
-        return fib3[n];
-    return fib3[n] = fib_dg3(n - 1) + fib_dg3(n - 2);
+    return fib_dg3(n - 1) + fib_dg3(n - 2);
 }
 unsigned long fib_dg4(int n)
 {
@@ -40,9 +31,7 @@ unsigned long fib_dg4(int n)
         return 1;
     else if(n == 0)
         return 0;
-    else if(fib4[n])
-        return fib4[n];
-    return fib4[n] = fib_dg4(n - 1) + fib_dg4(n - 2);
+    return fib_dg4(n - 1) + fib_dg4(n - 2);
 }
 int main()
 {
