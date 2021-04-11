@@ -1,6 +1,5 @@
 #include <stdio.h>
 
-const int x = -1190200523;
 
 int main(int argc, char *argv[])
 {
