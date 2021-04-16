@@ -8,4 +8,4 @@ struct a_struct
 {
     long idx;
     long x[4];
-}
+};
