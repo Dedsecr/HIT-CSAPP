@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/wait.h> 
 #include <signal.h>
-
+#include <csapp.h>
 /*
  * fork0 - The simplest fork example
  * Call once, return twice
@@ -36,6 +36,7 @@ void fork1()
     pid_t pid = fork();
 
     if (pid == 0) {
+        sleep(1);
 	printf("Child has x = %d\n", ++x);
     } 
     else {
@@ -164,6 +165,7 @@ void fork9()
     int child_status;
 
     if (fork() == 0) {
+        sleep(1);
 	printf("HC: hello from child\n");
         exit(0);
     } else {
@@ -174,7 +176,7 @@ void fork9()
     printf("Bye\n");
 }
 
-#define N 5
+#define N 5 
 /* 
  * fork10 - Synchronizing with multiple children (wait)
  * Reaps children in arbitrary order
@@ -302,14 +304,17 @@ void fork13()
 /*
  * child_handler - SIGCHLD handler that reaps one terminated child
  */
-int ccount = 0;
+volatile int ccount = 0;
 void child_handler(int sig)
 {
     int child_status;
     pid_t pid = wait(&child_status);
     ccount--;
-    printf("Received SIGCHLD signal %d for process %d\n", sig, pid); /* Unsafe */
-    fflush(stdout); /* Unsafe */
+    for (int i = 0; i < 7e8; i++)
+        i++,i--;
+    Sio_puts("Well...\n");
+    //printf("ccount = %d, Received SIGCHLD signal %d for process %d\n", ccount, sig, pid); /* Unsafe */
+    //fflush(stdout); /* Unsafe */
 }
 
 /*
@@ -321,15 +326,19 @@ void fork14()
     int i;
     ccount = N;
     signal(SIGCHLD, child_handler);
-
     for (i = 0; i < N; i++) {
-	if ((pid[i] = fork()) == 0) {
-	    sleep(1);
-	    exit(0);  /* Child: Exit */
-	}
+        //sleep(1);
+        if ((pid[i] = fork()) == 0)
+        {
+            //printf("@@\n");
+            //sleep(1);
+            _exit(0); /* Child: Exit */
+        }
     }
     while (ccount > 0)
-	;
+    {
+        ;
+    }
 }
 
 
@@ -340,10 +349,12 @@ void child_handler2(int sig)
 {
     int child_status;
     pid_t pid;
-    while ((pid = wait(&child_status)) > 0) {
-	ccount--;
-	printf("Received signal %d from process %d\n", sig, pid); /* Unsafe */
-	fflush(stdout); /* Unsafe */
+    printf("@@@");fflush(stdout);
+    while ((pid = wait(&child_status)) > 0)
+    {
+        ccount--;
+        printf("ccount = %d, Received SIGCHLD signal %d for process %d\n", ccount, sig, pid); /* Unsafe */
+        fflush(stdout);                                                                       /* Unsafe */
     }
 }
 
@@ -360,7 +371,7 @@ void fork15()
 
     for (i = 0; i < N; i++)
 	if ((pid[i] = fork()) == 0) {
-	    sleep(1);
+	    sleep(i);
 	    exit(0); /* Child: Exit */
 
 	}
