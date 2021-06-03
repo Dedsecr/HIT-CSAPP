@@ -476,7 +476,7 @@ void sigtstp_handler(int sig)
 		/* killblock all signals. */
 		sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
 		/* send signal SIGTSTP to the foreground job. */
-		kill(fg_pid, SIGTSTP);
+		kill(-fg_pid, SIGTSTP);
 		/* unblock signals. */
 		sigprocmask(SIG_SETMASK, &prev_all, NULL);
 	}
