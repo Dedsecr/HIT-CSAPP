@@ -307,13 +307,16 @@ int builtin_cmd(char **argv)
 	char *cmd_bg = "bg";
 	char *cmd_jobs = "jobs";
 
+	/* if the command is "quit", just exit. */
 	if (!strcmp(argv[0], cmd_quit)) {
 		exit(0);
 	}
+	/* if the command is "fg" or "bg", call do_bgfg. */
 	else if (!strcmp(argv[0], cmd_fg) || !strcmp(argv[0], cmd_bg)) {
 		do_bgfg(argv);
 		return 1;
 	}
+	/* if the command is "jobs", call listjobs to print job list. */
 	else if (!strcmp(argv[0], cmd_jobs)) {
 		listjobs(jobs);
 		return 1;
@@ -383,9 +386,9 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+	/* sleep until process pid is no longer the foreground process */
 	while (fgpid(jobs) == pid) 
-		sleep(5);
-    return;
+		sleep(1);
 }
 
 /*****************
@@ -407,9 +410,31 @@ void sigchld_handler(int sig)
 
 	sigfillset(&mask_all);
 	while ((pid = waitpid(-1, &status, WNOHANG|WUNTRACED)) > 0) {
-		sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
-		deletejob(jobs, pid);
-		sigprocmask(SIG_SETMASK, &prev_all, NULL);
+		if (WIFEXITED(status)) {
+			/* killblock all signals. */
+			sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
+			/* delete process from job list */
+			deletejob(jobs, pid);
+			/* unblock signals. */
+			sigprocmask(SIG_SETMASK, &prev_all, NULL);
+		}
+		else if (WIFSTOPPED(status)) {
+			struct job_t *job = getjobpid(jobs, pid);
+			/* set status. */
+			job->state = ST;
+			printf("Job [%d] (%d) stopped by signal %d\n", job->jid, job->pid, WSTOPSIG(status));
+		}
+		else if (WIFSIGNALED(status))
+		{
+			struct job_t *job = getjobpid(jobs, pid);
+			printf("Job [%d] (%d) terminated by signal %d\n", job->jid, job->pid, WTERMSIG(status));
+			/* killblock all signals. */
+			sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
+			/* delete process from job list */
+			deletejob(jobs, pid);
+			/* unblock signals. */
+			sigprocmask(SIG_SETMASK, &prev_all, NULL); 
+		}
 	}
 
 }
@@ -425,11 +450,12 @@ void sigint_handler(int sig)
 
 	sigfillset(&mask_all);
 	pid_t fg_pid = fgpid(jobs);
-	printf("%d\n", fg_pid);
 	if (fg_pid != 0) {
+		/* killblock all signals. */
 		sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
-		if (kill(-fg_pid, SIGINT) < 0)
-	    	unix_error("kill (fg) error");
+		/* send signal SIGINT to the foreground job. */
+		kill(-fg_pid, SIGINT);
+		/* unblock signals. */
 		sigprocmask(SIG_SETMASK, &prev_all, NULL);
 	}
 
@@ -442,20 +468,17 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
-	listjobs(jobs);
-	//sigset_t mask_all, prev_all;
+	sigset_t mask_all, prev_all;
 
-	//sigfillset(&mask_all);
+	sigfillset(&mask_all);
 	pid_t fg_pid = fgpid(jobs);
-	struct job_t *job = getjobpid(jobs, fg_pid);
 	if (fg_pid != 0) {
-		//sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
-		if (kill(fg_pid, SIGINT) < 0)
-	    	unix_error("kill (fg) error");
-		job->state = ST;
-		printf("Job [%d] (%d) stopped by signal %d\n", job->jid, job->pid, SIGTSTP);
-		listjobs(jobs);
-		//sigprocmask(SIG_SETMASK, &prev_all, NULL);
+		/* killblock all signals. */
+		sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
+		/* send signal SIGTSTP to the foreground job. */
+		kill(fg_pid, SIGTSTP);
+		/* unblock signals. */
+		sigprocmask(SIG_SETMASK, &prev_all, NULL);
 	}
 
 }
@@ -592,7 +615,6 @@ int pid2jid(pid_t pid)
 void listjobs(struct job_t *jobs) 
 {
     int i;
-    printf("Recived jobs\n");
     for (i = 0; i < MAXJOBS; i++) {
 	if (jobs[i].pid != 0) {
 	    printf("[%d] (%d) ", jobs[i].jid, jobs[i].pid);
