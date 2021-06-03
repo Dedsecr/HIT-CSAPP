@@ -1,12 +1,12 @@
 CC=gcc
-CFLAGS = -g -O2 -I.
+CFLAGS = -g -O0 -I. 
 LDLIBS = -lpthread
 
 PROGS = fork forks
 
-all: csapp.o  $(PROGS)
+all: csapp.c  $(PROGS)
 
-$(PROGS): csapp.o
+$(PROGS): csapp.c
 
 clean:
 	rm -rf $(PROGS) *~

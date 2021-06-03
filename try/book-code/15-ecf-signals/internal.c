@@ -23,7 +23,11 @@ int main() {
     alarm(1); /* send SIGALRM in
 		 1 second */
  
-    while (1) { 
-	continue; /* handler returns here */ 
-    } 
-} 
+    //while (1) { 
+	//; /* handler returns here */ 
+    //}
+    int i = 0;
+    for (; i < 100000000; i++)
+        i++, printf("%d\n", i);
+    printf("%d\n", i);
+}

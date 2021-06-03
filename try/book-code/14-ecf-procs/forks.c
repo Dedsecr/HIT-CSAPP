@@ -310,11 +310,9 @@ void child_handler(int sig)
     int child_status;
     pid_t pid = wait(&child_status);
     ccount--;
-    for (int i = 0; i < 7e8; i++)
-        i++,i--;
-    Sio_puts("Well...\n");
-    //printf("ccount = %d, Received SIGCHLD signal %d for process %d\n", ccount, sig, pid); /* Unsafe */
-    //fflush(stdout); /* Unsafe */
+    sleep(1);
+    printf("ccount = %d, Received SIGCHLD signal %d for process %d\n", ccount, sig, pid); /* Unsafe */
+    fflush(stdout); /* Unsafe */
 }
 
 /*
