@@ -206,7 +206,8 @@ void eval(char *cmdline)
 
 	if (pid == 0) {
 	    /* Child unblocks signals */
-	    sigprocmask(SIG_UNBLOCK, &mask, NULL);
+	    if (sigprocmask(SIG_UNBLOCK, &mask, NULL) < 0)
+			unix_error("sigprocmask error");
 
 	    /* Each new job must get a new process group ID 
 	       so that the kernel doesn't send ctrl-c and ctrl-z
@@ -228,7 +229,8 @@ void eval(char *cmdline)
 	/* Parent adds the job, and then unblocks signals so that
 	   the signals handlers can run again */
 	addjob(jobs, pid, (bg == 1 ? BG : FG), cmdline);
-	sigprocmask(SIG_UNBLOCK, &mask, NULL);
+	if (sigprocmask(SIG_UNBLOCK, &mask, NULL) < 0)
+		unix_error("sigprocmask error");
 
 	if (!bg) 
 	    waitfg(pid);
@@ -408,15 +410,18 @@ void sigchld_handler(int sig)
 	sigset_t mask_all, prev_all;
 	pid_t pid;
 
-	sigfillset(&mask_all);
+	if (sigfillset(&mask_all) < 0)
+		unix_error("sigfillset error");
 	while ((pid = waitpid(-1, &status, WNOHANG|WUNTRACED)) > 0) {
 		if (WIFEXITED(status)) {
 			/* killblock all signals. */
-			sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
+			if (sigprocmask(SIG_BLOCK, &mask_all, &prev_all) < 0)
+				unix_error("sigprocmask error");
 			/* delete process from job list */
 			deletejob(jobs, pid);
 			/* unblock signals. */
-			sigprocmask(SIG_SETMASK, &prev_all, NULL);
+			if (sigprocmask(SIG_SETMASK, &prev_all, NULL) < 0)
+				unix_error("sigprocmask error");
 		}
 		else if (WIFSTOPPED(status)) {
 			struct job_t *job = getjobpid(jobs, pid);
@@ -429,11 +434,13 @@ void sigchld_handler(int sig)
 			struct job_t *job = getjobpid(jobs, pid);
 			printf("Job [%d] (%d) terminated by signal %d\n", job->jid, job->pid, WTERMSIG(status));
 			/* killblock all signals. */
-			sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
+			if (sigprocmask(SIG_BLOCK, &mask_all, &prev_all))
+				unix_error("sigprocmask error");
 			/* delete process from job list */
 			deletejob(jobs, pid);
 			/* unblock signals. */
-			sigprocmask(SIG_SETMASK, &prev_all, NULL); 
+			if (sigprocmask(SIG_SETMASK, &prev_all, NULL))
+				unix_error("sigprocmask error");
 		}
 	}
 
@@ -452,11 +459,14 @@ void sigint_handler(int sig)
 	pid_t fg_pid = fgpid(jobs);
 	if (fg_pid != 0) {
 		/* killblock all signals. */
-		sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
+		if (sigprocmask(SIG_BLOCK, &mask_all, &prev_all))
+			unix_error("sigprocmask error");
 		/* send signal SIGINT to the foreground job. */
-		kill(-fg_pid, SIGINT);
+		if (kill(-fg_pid, SIGINT) < 0)
+			unix_error("kill error");
 		/* unblock signals. */
-		sigprocmask(SIG_SETMASK, &prev_all, NULL);
+		if (sigprocmask(SIG_SETMASK, &prev_all, NULL))
+			unix_error("sigprocmask error");
 	}
 
 }
@@ -474,11 +484,14 @@ void sigtstp_handler(int sig)
 	pid_t fg_pid = fgpid(jobs);
 	if (fg_pid != 0) {
 		/* killblock all signals. */
-		sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
+		if (sigprocmask(SIG_BLOCK, &mask_all, &prev_all))
+			unix_error("sigprocmask error");
 		/* send signal SIGTSTP to the foreground job. */
-		kill(-fg_pid, SIGTSTP);
+		if (kill(-fg_pid, SIGTSTP) < 0)
+			unix_error("kill error");
 		/* unblock signals. */
-		sigprocmask(SIG_SETMASK, &prev_all, NULL);
+		if (sigprocmask(SIG_SETMASK, &prev_all, NULL))
+			unix_error("sigprocmask error");
 	}
 
 }
