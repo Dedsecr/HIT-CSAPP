@@ -1,7 +1,7 @@
 /* 
  * tsh - A tiny shell program with job control
  * 
- * <Put your name and login ID here>
+ * 1190200523 Xiangyu Shi
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -302,7 +302,23 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
-    return 0;     /* not a builtin command */
+	char *cmd_quit = "quit";
+	char *cmd_fg = "fg";
+	char *cmd_bg = "bg";
+	char *cmd_jobs = "jobs";
+
+	if (!strcmp(argv[0], cmd_quit)) {
+		exit(0);
+	}
+	else if (!strcmp(argv[0], cmd_fg) || !strcmp(argv[0], cmd_bg)) {
+		do_bgfg(argv);
+		return 1;
+	}
+	else if (!strcmp(argv[0], cmd_jobs)) {
+		listjobs(jobs);
+		return 1;
+	}
+	return 0;     /* not a builtin command */
 }
 
 /* 
@@ -367,6 +383,8 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+	while (fgpid(jobs) == pid) 
+		sleep(5);
     return;
 }
 
@@ -383,7 +401,17 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
-    return;
+	int status;
+	sigset_t mask_all, prev_all;
+	pid_t pid;
+
+	sigfillset(&mask_all);
+	while ((pid = waitpid(-1, &status, WNOHANG|WUNTRACED)) > 0) {
+		sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
+		deletejob(jobs, pid);
+		sigprocmask(SIG_SETMASK, &prev_all, NULL);
+	}
+
 }
 
 /* 
@@ -393,7 +421,18 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
-    return;
+	sigset_t mask_all, prev_all;
+
+	sigfillset(&mask_all);
+	pid_t fg_pid = fgpid(jobs);
+	printf("%d\n", fg_pid);
+	if (fg_pid != 0) {
+		sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
+		if (kill(-fg_pid, SIGINT) < 0)
+	    	unix_error("kill (fg) error");
+		sigprocmask(SIG_SETMASK, &prev_all, NULL);
+	}
+
 }
 
 /*
@@ -403,7 +442,22 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
-    return;
+	listjobs(jobs);
+	//sigset_t mask_all, prev_all;
+
+	//sigfillset(&mask_all);
+	pid_t fg_pid = fgpid(jobs);
+	struct job_t *job = getjobpid(jobs, fg_pid);
+	if (fg_pid != 0) {
+		//sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
+		if (kill(fg_pid, SIGINT) < 0)
+	    	unix_error("kill (fg) error");
+		job->state = ST;
+		printf("Job [%d] (%d) stopped by signal %d\n", job->jid, job->pid, SIGTSTP);
+		listjobs(jobs);
+		//sigprocmask(SIG_SETMASK, &prev_all, NULL);
+	}
+
 }
 
 /*********************
@@ -538,7 +592,7 @@ int pid2jid(pid_t pid)
 void listjobs(struct job_t *jobs) 
 {
     int i;
-    
+    printf("Recived jobs\n");
     for (i = 0; i < MAXJOBS; i++) {
 	if (jobs[i].pid != 0) {
 	    printf("[%d] (%d) ", jobs[i].jid, jobs[i].pid);
