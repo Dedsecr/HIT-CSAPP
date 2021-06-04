@@ -310,8 +310,8 @@ void child_handler(int sig)
     int child_status;
     pid_t pid = wait(&child_status);
     ccount--;
-    sleep(1);
-    printf("ccount = %d, Received SIGCHLD signal %d for process %d\n", ccount, sig, pid); /* Unsafe */
+    int res = sleep(5);
+    printf("sleep:%d, ccount = %d, Received SIGCHLD signal %d for process %d\n", res, ccount, sig, pid); /* Unsafe */
     fflush(stdout); /* Unsafe */
 }
 
@@ -330,7 +330,9 @@ void fork14()
         {
             //printf("@@\n");
             //sleep(1);
-            _exit(0); /* Child: Exit */
+            printf("@@\n");
+            fflush(stdout);
+            return; /* Child: Exit */
         }
     }
     while (ccount > 0)

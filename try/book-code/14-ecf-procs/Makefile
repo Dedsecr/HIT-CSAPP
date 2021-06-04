@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS = -g -O0 -I. 
 LDLIBS = -lpthread
 
-PROGS = fork forks
+PROGS = fork forksnew
 
 all: csapp.c  $(PROGS)
 
