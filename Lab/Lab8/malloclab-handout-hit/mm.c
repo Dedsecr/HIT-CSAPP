@@ -64,6 +64,7 @@ team_t team = {
 
 /* Read the size and allocated fields from address p */
 #define GET_SIZE(p)  (GET(p) & ~0x7)
+
 #define GET_ALLOC(p) (GET(p) & 0x1)
 
 /* Given block ptr bp, compute address of its header and footer */
@@ -300,10 +301,39 @@ static void *find_fit(size_t asize)
  */
 static void *coalesce(void *bp) 
 {
-   /**/
-    return NULL;
+    size_t  prev_alloc = GET_ALLOC(HDRP(PREV_BLKP(bp)));
+    size_t  next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
+    size_t size = GET_SIZE(HDRP(bp));
+     /* 1.前后均为allocated块，不做合并，直接返回 */
+    if (prev_alloc && next_alloc)   /*case1*/
+    {
+        return bp;
+    }
+    /* 2.前面的块是allocated，但是后面的块是free的，这时将两个free块合并 */
+    else if (prev_alloc && !next_alloc)   /*case2*/
+    {
+        size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
+        PUT(HDRP(bp), PACK(size, 0));
+        PUT(FTRP(bp), PACK(size, 0));
+    }
+    /* 3.后面的块是allocated，但是前面的块是free的，这时将两个free块合并 */
+    else if (!prev_alloc && next_alloc)   /*case3*/
+    {
+        size += GET_SIZE(HDRP(PREV_BLKP(bp)));
+        PUT(FTRP(bp), PACK(size, 0));
+        PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
+        bp = PREV_BLKP(bp);
+    }
+    /* 4.前后两个块都是free块，这时将三个块同时合并 */
+    else   /*case4*/
+    {
+        size += GET_SIZE(HDRP(PREV_BLKP(bp))) + GET_SIZE(HDRP(NEXT_BLKP(bp)));
+        PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
+        PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 0));
+        bp = PREV_BLKP(bp);
+    }
+    return bp;
 }
-
 
 static void printblock(void *bp) 
 {
